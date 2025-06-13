@@ -1,101 +1,161 @@
-import Image from "next/image";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
+import { Users, Building2, GraduationCap, Briefcase, Star, ArrowRight } from "lucide-react"
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="border-b bg-white/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Briefcase className="h-8 w-8 text-blue-600" />
+            <span className="text-2xl font-bold text-gray-900">Start.Gig</span>
+          </div>
+          <div className="flex space-x-4">
+            <Link href="/auth/signin">
+              <Button variant="ghost">Sign In</Button>
+            </Link>
+            <Link href="/auth/signup">
+              <Button>Get Started</Button>
+            </Link>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            Connect Students with
+            <span className="text-blue-600"> Dream Opportunities</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            The premier platform connecting talented students with employers offering part-time jobs, internships, and
+            entry-level positions.
+          </p>
+
+          {/* Role Selection Cards */}
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-12">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200">
+              <CardHeader className="text-center">
+                <GraduationCap className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle>I'm a Student</CardTitle>
+                <CardDescription>Find part-time jobs and internships that fit your schedule</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/auth/signup?role=student">
+                  <Button className="w-full">
+                    Find Jobs <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-green-200">
+              <CardHeader className="text-center">
+                <Building2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <CardTitle>I'm an Employer</CardTitle>
+                <CardDescription>Hire talented students for your organization</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/auth/signup?role=employer">
+                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                    Post Jobs <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-purple-200">
+              <CardHeader className="text-center">
+                <Users className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+                <CardTitle>School Admin</CardTitle>
+                <CardDescription>Manage your institution's job board and students</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/auth/signup?role=admin">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                    Admin Panel <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">Why Choose Start.Gig?</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Star className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="font-semibold mb-2">Verified Opportunities</h3>
+              <p className="text-gray-600">All job postings are verified by school administrators</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-green-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Users className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="font-semibold mb-2">Student-Focused</h3>
+              <p className="text-gray-600">Designed specifically for student schedules and needs</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-purple-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Building2 className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="font-semibold mb-2">Quality Employers</h3>
+              <p className="text-gray-600">Connect with reputable companies and organizations</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-orange-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <GraduationCap className="h-8 w-8 text-orange-600" />
+              </div>
+              <h3 className="font-semibold mb-2">Career Growth</h3>
+              <p className="text-gray-600">Build experience and professional networks</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4 text-center">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">10,000+</div>
+              <div className="text-gray-600">Active Students</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-green-600 mb-2">500+</div>
+              <div className="text-gray-600">Partner Employers</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-purple-600 mb-2">50+</div>
+              <div className="text-gray-600">Universities</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <Briefcase className="h-8 w-8" />
+            <span className="text-2xl font-bold">Start.Gig</span>
+          </div>
+          <div className="text-center text-gray-400">
+            <p>&copy; 2024 Start.Gig. All rights reserved.</p>
+            <p className="mt-2">Connecting students with opportunities since 2024</p>
+          </div>
+        </div>
       </footer>
     </div>
-  );
+  )
 }
