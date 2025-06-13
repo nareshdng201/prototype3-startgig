@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -40,20 +40,6 @@ export default function StudentDashboard() {
   const [isApplying, setIsApplying] = useState<string | null>(null)
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
 
-  useEffect(() => {
-    fetchJobs()
-  }, [])
-
-  useEffect(() => {
-    filterJobs()
-  }, [jobs, searchTerm, locationFilter, typeFilter])
-
-  useEffect(() => {
-    // Extract unique locations from jobs
-    const locations = Array.from(new Set(jobs.map(job => job.location)))
-    setUniqueLocations(locations)
-  }, [jobs])
-
   const fetchJobs = async () => {
     try {
       const response = await fetch("/api/jobs")
@@ -90,33 +76,42 @@ export default function StudentDashboard() {
     }
   }
 
-  const filterJobs = () => {
-    let filtered = jobs
-
+  const filterJobs = useCallback(() => {
+    let filtered = [...jobs]
+    
     if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase().trim()
-      filtered = filtered.filter(
-        (job) =>
-          job.title.toLowerCase().includes(searchLower) ||
-          job.company.toLowerCase().includes(searchLower) ||
-          job.description.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(job => 
+        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.company.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
-
-    if (locationFilter && locationFilter !== "all") {
-      filtered = filtered.filter((job) =>
-        job.location.toLowerCase() === locationFilter.toLowerCase()
+    
+    if (locationFilter) {
+      filtered = filtered.filter(job => 
+        job.location.toLowerCase().includes(locationFilter.toLowerCase())
       )
     }
-
-    if (typeFilter && typeFilter !== "all") {
-      filtered = filtered.filter((job) =>
-        job.type.toLowerCase() === typeFilter.toLowerCase()
-      )
+    
+    if (typeFilter) {
+      filtered = filtered.filter(job => job.type === typeFilter)
     }
-
+    
     setFilteredJobs(filtered)
-  }
+  }, [jobs, searchTerm, locationFilter, typeFilter])
+
+  useEffect(() => {
+    fetchJobs()
+  }, [fetchJobs])
+
+  useEffect(() => {
+    filterJobs()
+  }, [filterJobs])
+
+  useEffect(() => {
+    // Extract unique locations from jobs
+    const locations = Array.from(new Set(jobs.map(job => job.location)))
+    setUniqueLocations(locations)
+  }, [jobs])
 
   const handleApply = async (jobId: string) => {
     try {
@@ -446,7 +441,7 @@ export default function StudentDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No applications yet. Start applying to jobs!</p>
+                  <p className="text-gray-500">Don&apos;t have any applications yet</p>
                 )}
               </CardContent>
             </Card>
@@ -456,7 +451,7 @@ export default function StudentDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Saved Jobs</CardTitle>
-                <CardDescription>Jobs you've saved for later</CardDescription>
+                <CardDescription>Jobs you&apos;ve saved for later</CardDescription>
               </CardHeader>
               <CardContent>
                 {jobs.filter(job => job.saved).length > 0 ? (
@@ -502,7 +497,7 @@ export default function StudentDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No saved jobs yet. Save jobs you're interested in!</p>
+                  <p className="text-gray-500">No saved jobs yet. Save jobs you&apos;re interested in!</p>
                 )}
               </CardContent>
             </Card>

@@ -41,7 +41,7 @@ export default function LandingPage() {
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-200">
               <CardHeader className="text-center">
                 <GraduationCap className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                <CardTitle>I'm a Student</CardTitle>
+                <CardTitle>I&apos;m a Student</CardTitle>
                 <CardDescription>Find part-time jobs and internships that fit your schedule</CardDescription>
               </CardHeader>
               <CardContent>
@@ -56,7 +56,7 @@ export default function LandingPage() {
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-green-200">
               <CardHeader className="text-center">
                 <Building2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle>I'm an Employer</CardTitle>
+                <CardTitle>I&apos;m an Employer</CardTitle>
                 <CardDescription>Hire talented students for your organization</CardDescription>
               </CardHeader>
               <CardContent>
@@ -72,7 +72,7 @@ export default function LandingPage() {
               <CardHeader className="text-center">
                 <Users className="h-12 w-12 text-purple-600 mx-auto mb-4" />
                 <CardTitle>School Admin</CardTitle>
-                <CardDescription>Manage your institution's job board and students</CardDescription>
+                <CardDescription>Manage your institution&apos;s job board and students</CardDescription>
               </CardHeader>
               <CardContent>
                 <Link href="/auth/signup?role=admin">

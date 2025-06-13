@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Users, Building2, Briefcase, CheckCircle, XCircle, User, Bell, Settings, Palette, Shield } from "lucide-react"
+import Link from "next/link"
 
 interface PendingUser {
   _id: string
@@ -61,12 +62,6 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchPendingUsers()
-    fetchSchoolSettings()
-    fetchDashboardStats()
-  }, [])
-
   const fetchPendingUsers = async () => {
     try {
       const response = await fetch("/api/admin/pending-users")
@@ -109,6 +104,11 @@ export default function AdminDashboard() {
       })
     }
   }
+
+  useEffect(() => {
+    fetchDashboardStats()
+    fetchPendingUsers()
+  }, [fetchDashboardStats, fetchPendingUsers])
 
   const handleUserApproval = async (userId: string, approved: boolean) => {
     try {
@@ -185,13 +185,13 @@ export default function AdminDashboard() {
               </Badge>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
+              {/* <Button variant="ghost" size="sm">
                 <Bell className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
+              </Button> */}
+              <Link href="/admin/profile" className="text-sm  flex items-center font-medium text-gray-600 hover:text-blue-600">
+                <User className="size-5 mr-2" />
+           
+              </Link>
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your school's job board platform</p>
+          <p className="text-gray-600">Manage your school&apos;s job board platform</p>
         </div>
 
         {/* Stats Cards */}
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
         <Tabs defaultValue="approvals" className="space-y-6">
           <TabsList>
             <TabsTrigger value="approvals">User Approvals</TabsTrigger>
-            <TabsTrigger value="settings">School Settings</TabsTrigger>
+            {/* <TabsTrigger value="settings">School Settings</TabsTrigger> */}
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -363,7 +363,7 @@ export default function AdminDashboard() {
                   <Settings className="h-5 w-5 mr-2" />
                   School Settings
                 </CardTitle>
-                <CardDescription>Customize your school's job board appearance and settings</CardDescription>
+                <CardDescription>Customize your school&apos;s job board appearance and settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">

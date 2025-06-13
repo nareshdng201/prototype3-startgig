@@ -67,6 +67,26 @@ export default function EmployerDashboard() {
   const [activeTab, setActiveTab] = useState("jobs")
   const { toast } = useToast()
 
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch('/api/employer/jobs')
+      const data = await response.json()
+      setJobs(data)
+    } catch (error) {
+      console.error('Error fetching jobs:', error)
+    }
+  }
+
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch('/api/employer/applications')
+      const data = await response.json()
+      setApplications(data)
+    } catch (error) {
+      console.error('Error fetching applications:', error)
+    }
+  }
+
   useEffect(() => {
     if (session?.user?._id) {
       fetchJobs()
@@ -74,75 +94,7 @@ export default function EmployerDashboard() {
         fetchApplications()
       }
     }
-  }, [session, activeTab])
-
-  const fetchJobs = async () => {
-    try {
-      const response = await fetch(`/api/employer/jobs?employerId=${session?.user?._id}`)
-      if (!response.ok) {
-        throw new Error(response.statusText)
-      }
-      const data = await response.json()
-      setJobs(data)
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch jobs",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const fetchApplications = async () => {
-    try {
-      // If a specific job is selected, only fetch its applications
-      if (selectedJobId) {
-        const url = `/api/employer/applications?jobId=${selectedJobId}`
-        console.log('Fetching applications for job:', selectedJobId)
-        const response = await fetch(url)
-        if (!response.ok) {
-          throw new Error(response.statusText)
-        }
-        const data = await response.json()
-        console.log('Received applications data:', data)
-        if (Array.isArray(data)) {
-          setApplications(data)
-        } else {
-          console.error('Expected array of applications but got:', data)
-          setApplications([])
-        }
-        return
-      }
-
-      // Otherwise, fetch applications for all jobs
-      const allApplications: Application[] = []
-      for (const job of jobs) {
-        const url = `/api/employer/applications?jobId=${job.id}`
-        console.log('Fetching applications for job:', job.id)
-        const response = await fetch(url)
-        if (!response.ok) {
-          throw new Error(response.statusText)
-        }
-        const data = await response.json()
-        console.log('Received applications data for job', job.id, ':', data)
-        if (Array.isArray(data)) {
-          allApplications.push(...data)
-        }
-      }
-      console.log('All applications:', allApplications)
-      setApplications(allApplications)
-    } catch (error) {
-      console.error('Error fetching applications:', error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch applications",
-        variant: "destructive",
-      })
-      setApplications([])
-    }
-  }
+  }, [session, activeTab, fetchJobs, fetchApplications])
 
   const handleDeleteJob = async (jobId: string) => {
     try {
