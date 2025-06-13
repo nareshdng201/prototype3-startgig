@@ -128,9 +128,9 @@ export default function SignUpPage() {
     }
   }
 
-  const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && skillInput.trim()) {
-      e.preventDefault()
+  const handleAddSkill = (e?: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e?.key === 'Enter' || !e) && skillInput.trim()) {
+      if (e) e.preventDefault()
       const newSkill = skillInput.trim()
       if (!formData.skills.includes(newSkill)) {
         setFormData(prev => ({
@@ -340,7 +340,7 @@ export default function SignUpPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="phoneNumber" className="text-sm font-medium">Phone Number</Label>
                     <div className="relative group">
@@ -359,18 +359,27 @@ export default function SignUpPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="skills" className="text-sm font-medium">Skills</Label>
-                    <div className="relative group">
-                      <Wrench className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
-                      <Input
-                        id="skills"
-                        placeholder="Type a skill and press Enter"
-                        value={skillInput}
-                        onChange={(e) => setSkillInput(e.target.value)}
-                        onKeyDown={handleAddSkill}
-                        className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
-                      />
+                    <div className="relative group flex gap-2">
+                      <div className="relative flex-1">
+                        <Wrench className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                        <Input
+                          id="skills"
+                          placeholder="Type a skill and press Enter"
+                          value={skillInput}
+                          onChange={(e) => setSkillInput(e.target.value)}
+                          onKeyDown={handleAddSkill}
+                          className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => handleAddSkill()}
+                        className="h-11 px-4 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        Add
+                      </Button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Press Enter to add each skill</p>
+                    <p className="text-xs text-gray-500 mt-1">Press Enter or click Add to add each skill</p>
                   </div>
                 </div>
                 

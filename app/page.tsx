@@ -17,7 +17,7 @@ export default function LandingPage() {
             <Link href="/auth/signin">
               <Button variant="ghost">Sign In</Button>
             </Link>
-            <Link href="/auth/signup">
+            <Link className="sm:flex hidden" href="/auth/signup">
               <Button>Get Started</Button>
             </Link>
           </div>
