@@ -69,32 +69,41 @@ export default function EmployerDashboard() {
 
   const fetchJobs = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch('/api/employer/jobs')
       const data = await response.json()
       setJobs(data)
     } catch (error) {
       console.error('Error fetching jobs:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const fetchApplications = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch('/api/employer/applications')
       const data = await response.json()
       setApplications(data)
     } catch (error) {
       console.error('Error fetching applications:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   useEffect(() => {
     if (session?.user?._id) {
       fetchJobs()
-      if (activeTab === "applications") {
-        fetchApplications()
-      }
     }
-  }, [session, activeTab, fetchJobs, fetchApplications])
+  }, [session?.user?._id])
+
+  useEffect(() => {
+    if (session?.user?._id && activeTab === "applications") {
+      fetchApplications()
+    }
+  }, [session?.user?._id, activeTab])
 
   const handleDeleteJob = async (jobId: string) => {
     try {

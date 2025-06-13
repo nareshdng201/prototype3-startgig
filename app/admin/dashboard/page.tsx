@@ -246,7 +246,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          {/* <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
                 <Briefcase className="h-8 w-8 text-purple-600" />
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
           <TabsList>
             <TabsTrigger value="approvals">User Approvals</TabsTrigger>
             {/* <TabsTrigger value="settings">School Settings</TabsTrigger> */}
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="approvals" className="space-y-4">
