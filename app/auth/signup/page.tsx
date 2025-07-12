@@ -14,19 +14,21 @@ import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { Briefcase, Mail, Lock, User, Building2, Chrome, GraduationCap, Wrench, X, Phone } from "lucide-react"
 import { signIn } from "next-auth/react"
+import { signupSchema, emailSchema, passwordSchema, phoneSchema, urlSchema, type SignupFormData } from "@/utils/validation/signup"
+import { ZodError } from "zod"
 
 export default function SignUpPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignupFormData>({
     email: "",
     password: "",
     confirmPassword: "",
     firstName: "",
     lastName: "",
-    role: "",
+    role: "student",
     companyName: "",
     schoolName: "",
     education: "",
-    skills: [] as string[],
+    skills: [],
     experience: "",
     location: "",
     website: "",
@@ -35,6 +37,8 @@ export default function SignUpPage() {
   })
   const [skillInput, setSkillInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -42,17 +46,74 @@ export default function SignUpPage() {
   useEffect(() => {
     const role = searchParams.get("role")
     if (role && ["student", "employer", "admin"].includes(role)) {
-      setFormData((prev) => ({ ...prev, role }))
+      setFormData((prev) => ({ ...prev, role: role as "student" | "employer" | "admin" }))
     }
   }, [searchParams])
 
+  const validateField = (field: string, value: any) => {
+    try {
+      switch (field) {
+        case "email":
+          emailSchema.parse(value)
+          break
+        case "password":
+          passwordSchema.parse(value)
+          break
+        case "phoneNumber":
+          if (value) phoneSchema.parse(value)
+          break
+        case "website":
+          if (value) urlSchema.parse(value)
+          break
+        default:
+          break
+      }
+      setErrors(prev => ({ ...prev, [field]: "" }))
+    } catch (error) {
+      if (error instanceof ZodError) {
+        setErrors(prev => ({ ...prev, [field]: error.errors[0].message }))
+      }
+    }
+  }
+
   const handleInputChange = (field: string, value: string | string[]) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value } as SignupFormData))
+
+    // Validate field on change if it has been touched
+    if (touched[field]) {
+      validateField(field, value)
+    }
+  }
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    validateField(field, formData[field as keyof SignupFormData])
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+
+    // Validate all fields
+    try {
+      signupSchema.parse(formData)
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const fieldErrors: Record<string, string> = {}
+        error.errors.forEach((err) => {
+          const field = err.path[0] as string
+          fieldErrors[field] = err.message
+        })
+        setErrors(fieldErrors)
+        toast({
+          title: "Validation Error",
+          description: `${error?.errors[0]?.message}`,
+          variant: "destructive",
+        })
+        setIsLoading(false)
+        return
+      }
+    }
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
@@ -65,15 +126,6 @@ export default function SignUpPage() {
       return
     }
 
-    if (formData.role === "student" && !formData.email.endsWith(".edu")) {
-      toast({
-        title: "Invalid email",
-        description: "Students must use a .edu email address",
-        variant: "destructive",
-      })
-      setIsLoading(false)
-      return
-    }
 
     try {
       const response = await fetch("/api/auth/signup", {
@@ -83,7 +135,7 @@ export default function SignUpPage() {
         },
         body: JSON.stringify({ ...formData, name: `${formData.firstName} ${formData.lastName}`, isApproved: 'pending' }),
       })
-  
+
 
       const data = await response.json()
 
@@ -132,21 +184,23 @@ export default function SignUpPage() {
     if ((e?.key === 'Enter' || !e) && skillInput.trim()) {
       if (e) e.preventDefault()
       const newSkill = skillInput.trim()
-      if (!formData.skills.includes(newSkill)) {
+      const currentSkills = formData.skills || []
+      if (!currentSkills.includes(newSkill)) {
         setFormData(prev => ({
           ...prev,
-          skills: [...prev.skills, newSkill]
-        }))
+          skills: [...currentSkills, newSkill]
+        } as SignupFormData))
         setSkillInput("")
       }
     }
   }
 
   const handleRemoveSkill = (skillToRemove: string) => {
+    const currentSkills = formData.skills || []
     setFormData(prev => ({
       ...prev,
-      skills: prev.skills.filter(skill => skill !== skillToRemove)
-    }))
+      skills: currentSkills.filter(skill => skill !== skillToRemove)
+    } as SignupFormData))
   }
 
   return (
@@ -162,7 +216,7 @@ export default function SignUpPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="role" className="text-sm font-medium">I am a...</Label>
               <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
                 <SelectTrigger className="h-11">
@@ -174,7 +228,7 @@ export default function SignUpPage() {
                   <SelectItem value="admin">School Admin</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -186,10 +240,14 @@ export default function SignUpPage() {
                     placeholder="John"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                    onBlur={() => handleBlur("firstName")}
+                    className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.firstName ? 'border-red-500 focus:ring-red-500' : ''}`}
                     required
                   />
                 </div>
+                {errors.firstName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.firstName}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName" className="text-sm font-medium">Last Name</Label>
@@ -198,9 +256,13 @@ export default function SignUpPage() {
                   placeholder="Doe"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  className="h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => handleBlur("lastName")}
+                  className={`h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.lastName ? 'border-red-500 focus:ring-red-500' : ''}`}
                   required
                 />
+                {errors.lastName && (
+                  <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
+                )}
               </div>
             </div>
 
@@ -211,15 +273,16 @@ export default function SignUpPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder={formData.role === "student" ? "student@university.edu" : "your@email.com"}
+                  placeholder={"example@email.com"}
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => handleBlur("email")}
+                  className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
                   required
                 />
               </div>
-              {formData.role === "student" && (
-                <p className="text-xs text-gray-500 mt-1">Students must use a .edu email address</p>
+              {errors.email && (
+                <p className="text-sm text-red-600 mt-1">{errors.email}</p>
               )}
             </div>
 
@@ -235,7 +298,8 @@ export default function SignUpPage() {
                         placeholder="Acme Corp"
                         value={formData.companyName}
                         onChange={(e) => handleInputChange("companyName", e.target.value)}
-                        className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                        onBlur={() => handleBlur("companyName")}
+                        className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.companyName ? 'border-red-500 focus:ring-red-500' : ''}`}
                         required
                       />
                     </div>
@@ -267,7 +331,8 @@ export default function SignUpPage() {
                       placeholder="https://www.example.com"
                       value={formData.website}
                       onChange={(e) => handleInputChange("website", e.target.value)}
-                      className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                      onBlur={() => handleBlur("website")}
+                      className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.website ? 'border-red-500 focus:ring-red-500' : ''}`}
                     />
                   </div>
                 </div>
@@ -280,10 +345,14 @@ export default function SignUpPage() {
                       placeholder="Tell us about your company, its mission, and what makes it unique..."
                       value={formData.description}
                       onChange={(e) => handleInputChange("description", e.target.value)}
-                      className="w-full px-3 py-2 min-h-[120px] rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all resize-none"
+                      onBlur={() => handleBlur("description")}
+                      className={`w-full px-3 py-2 min-h-[120px] rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all resize-none ${errors.description ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                       required
                     />
                   </div>
+                  {errors.description && (
+                    <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">Minimum 10 characters required</p>
                 </div>
               </div>
@@ -299,7 +368,8 @@ export default function SignUpPage() {
                     placeholder="University of Example"
                     value={formData.schoolName}
                     onChange={(e) => handleInputChange("schoolName", e.target.value)}
-                    className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                    onBlur={() => handleBlur("schoolName")}
+                    className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.schoolName ? 'border-red-500 focus:ring-red-500' : ''}`}
                     required
                   />
                 </div>
@@ -318,10 +388,14 @@ export default function SignUpPage() {
                         placeholder="e.g., Bachelor's in Computer Science"
                         value={formData.education}
                         onChange={(e) => handleInputChange("education", e.target.value)}
-                        className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                        onBlur={() => handleBlur("education")}
+                        className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.education ? 'border-red-500 focus:ring-red-500' : ''}`}
                         required
                       />
                     </div>
+                    {errors.education && (
+                      <p className="text-sm text-red-600 mt-1">{errors.education}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -351,10 +425,14 @@ export default function SignUpPage() {
                         placeholder="+1 (555) 000-0000"
                         value={formData.phoneNumber}
                         onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                        className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                        onBlur={() => handleBlur("phoneNumber")}
+                        className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.phoneNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
                         required
                       />
                     </div>
+                    {errors.phoneNumber && (
+                      <p className="text-sm text-red-600 mt-1">{errors.phoneNumber}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -379,13 +457,16 @@ export default function SignUpPage() {
                         Add
                       </Button>
                     </div>
+                    {errors.skills && (
+                      <p className="text-sm text-red-600 mt-1">{errors.skills}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">Press Enter or click Add to add each skill</p>
                   </div>
                 </div>
-                
-                {formData.skills.length > 0 && (
+
+                {(formData.skills || []).length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {formData.skills.map((skill, index) => (
+                    {(formData.skills || []).map((skill, index) => (
                       <div
                         key={index}
                         className="group flex items-center gap-1 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium transition-all hover:bg-blue-100"
@@ -429,10 +510,14 @@ export default function SignUpPage() {
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => handleBlur("password")}
+                  className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
                   required
                 />
               </div>
+              {errors.password && (
+                <p className="text-sm text-red-600 mt-1">{errors.password}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -445,15 +530,19 @@ export default function SignUpPage() {
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  className="pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => handleBlur("confirmPassword")}
+                  className={`pl-10 h-11 transition-all focus:ring-2 focus:ring-blue-500 ${errors.confirmPassword ? 'border-red-500 focus:ring-red-500' : ''}`}
                   required
                 />
               </div>
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>
+              )}
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium transition-all duration-200 transform hover:scale-[1.02] focus:scale-[0.98]" 
+            <Button
+              type="submit"
+              className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium transition-all duration-200 transform hover:scale-[1.02] focus:scale-[0.98]"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -488,7 +577,7 @@ export default function SignUpPage() {
 
           <div className="text-center text-sm">
             <span className="text-gray-600">Already have an account? </span>
-            <Link href="/auth/signin" className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors">
+            <Link href={`/auth/signin?role=${searchParams.get("role")}`} className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors">
               Sign in
             </Link>
           </div>

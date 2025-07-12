@@ -7,6 +7,8 @@ import JobApplicationModel from "@/app/models/jobApplication/jobApplication.mode
 
 const applicationSchema = z.object({
   jobId: z.string(),
+  cvUrl: z.string().optional(),
+  coverLetter: z.string().optional(),
 })
 
 export async function GET(request: Request) {
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
     const studentId = payload.userId as string
 
     const body = await request.json()
-    const { jobId } = applicationSchema.parse(body)
+    const { jobId, cvUrl, coverLetter } = applicationSchema.parse(body)
 
     // Check if application already exists
     const existingApplication = await JobApplicationModel.findOne({
@@ -69,6 +71,8 @@ export async function POST(request: Request) {
       jobId,
       studentId,
       status: 'pending',
+      cvUrl,
+      coverLetter,
     })
 
     return NextResponse.json(application, { status: 201 })

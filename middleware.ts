@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // For employer and student routes, check approval status
-    if (path.startsWith('/employer') || path.startsWith('/student')) {
+    if (path.startsWith('/employer')) {
       const isApproved = payload.isApproved as string;
       if (isApproved !== 'approved') {
         return NextResponse.redirect(new URL('/auth/pending', request.url));

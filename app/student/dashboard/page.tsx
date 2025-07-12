@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { Search, MapPin, Clock, DollarSign, Briefcase, User, Bell, Heart } from "lucide-react"
+import { Search, MapPin, Clock, DollarSign, Briefcase, User, Bell, Heart, X } from "lucide-react"
 
 interface Job {
   _id: string
@@ -25,6 +26,7 @@ interface Job {
   deadline: string
   applied?: boolean
   saved?: boolean
+  applicationId?: string
 }
 
 export default function StudentDashboard() {
@@ -38,6 +40,7 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState("browse")
   const { toast } = useToast()
   const [isApplying, setIsApplying] = useState<string | null>(null)
+  const [isWithdrawing, setIsWithdrawing] = useState<string | null>(null)
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
 
   const fetchJobs = async () => {
@@ -58,11 +61,15 @@ export default function StudentDashboard() {
       const savedJobs = savedJobsResponse.ok ? await savedJobsResponse.json() : []
 
       // Update job status based on applications and saved jobs
-      const jobsWithStatus = data.map((job: Job) => ({
-        ...job,
-        applied: applications.some((app: any) => app.jobId._id === job._id),
-        saved: savedJobs.some((saved: any) => saved.jobId._id === job._id)
-      }))
+      const jobsWithStatus = data.map((job: Job) => {
+        const application = applications.find((app: any) => app.jobId._id === job._id)
+        return {
+          ...job,
+          applied: !!application,
+          saved: savedJobs.some((saved: any) => saved.jobId._id === job._id),
+          applicationId: application?._id
+        }
+      })
 
       setJobs(jobsWithStatus)
     } catch (error) {
@@ -78,34 +85,36 @@ export default function StudentDashboard() {
 
   const filterJobs = useCallback(() => {
     let filtered = [...jobs]
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(job => 
+      filtered = filtered.filter(job =>
         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.company.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
-    
-    if (locationFilter) {
-      filtered = filtered.filter(job => 
+
+    if (locationFilter && locationFilter !== "all") {
+      filtered = filtered.filter(job =>
         job.location.toLowerCase().includes(locationFilter.toLowerCase())
       )
     }
-    
-    if (typeFilter) {
+
+    if (typeFilter && typeFilter !== "all") {
       filtered = filtered.filter(job => job.type === typeFilter)
     }
-    
+
     setFilteredJobs(filtered)
   }, [jobs, searchTerm, locationFilter, typeFilter])
 
+
+  console.log(jobs)
   useEffect(() => {
     fetchJobs()
-  }, [fetchJobs])
+  }, [])
 
   useEffect(() => {
     filterJobs()
-  }, [filterJobs])
+  }, [jobs, searchTerm, locationFilter, typeFilter])
 
   useEffect(() => {
     // Extract unique locations from jobs
@@ -198,6 +207,48 @@ export default function StudentDashboard() {
         description: "Failed to remove job from saved list",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleWithdrawApplication = async (jobId: string, applicationId: string) => {
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(
+      "Are you sure you want to withdraw your application? This action cannot be undone."
+    )
+    
+    if (!isConfirmed) {
+      return
+    }
+
+    try {
+      setIsWithdrawing(jobId)
+      const response = await fetch(`/api/applications/${applicationId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to withdraw application')
+      }
+
+      toast({
+        title: "Application withdrawn",
+        description: "Your application has been successfully withdrawn",
+      })
+
+      setJobs((prev) => prev.map((job) => 
+        job._id === jobId 
+          ? { ...job, applied: false, applicationId: undefined }
+          : job
+      ))
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to withdraw application",
+        variant: "destructive",
+      })
+    } finally {
+      setIsWithdrawing(null)
     }
   }
 
@@ -323,7 +374,9 @@ export default function StudentDashboard() {
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{job.title}</h3>
+                          <Link href={`/student/jobs/${job._id}`}>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors cursor-pointer">{job.title}</h3>
+                          </Link>
                           <p className="text-lg text-gray-700 mb-2">{job.company}</p>
                           <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                             <div className="flex items-center">
@@ -349,6 +402,11 @@ export default function StudentDashboard() {
                           </div>
                         </div>
                         <div className="flex flex-col space-y-2 ml-4">
+                          <Link href={`/student/jobs/${job._id}`}>
+                            <Button size="sm" variant="outline" className="w-full">
+                              View Details
+                            </Button>
+                          </Link>
                           <Button
                             size="sm"
                             onClick={() => job.saved ? handleUnsaveJob(job._id) : handleSaveJob(job._id)}
@@ -419,21 +477,65 @@ export default function StudentDashboard() {
                 <CardDescription>Track your job applications</CardDescription>
               </CardHeader>
               <CardContent>
-                {jobs.filter(job => job.applied).length > 0 ? (
+                {jobs?.filter(job => job.applied).length > 0 ? (
                   <div className="space-y-4">
-                    {jobs.filter(job => job.applied).map((job) => (
+                    {jobs?.filter(job => job?.applied).map((job) => (
                       <Card key={job._id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-6">
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{job.title}</h3>
-                          <p className="text-lg text-gray-700 mb-2">{job.company}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              {job.location}
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <Link href={`/student/jobs/${job._id}`}>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors cursor-pointer">{job.title}</h3>
+                              </Link>
+                              <p className="text-lg text-gray-700 mb-2">{job.company}</p>
+                              <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                                <div className="flex items-center">
+                                  <MapPin className="h-4 w-4 mr-1" />
+                                  {job.location}
+                                </div>
+                                <div className="flex items-center">
+                                  <Clock className="h-4 w-4 mr-1" />
+                                  {job.type}
+                                </div>
+                                <div className="flex items-center">
+                                  <DollarSign className="h-4 w-4 mr-1" />
+                                  {job.salary}
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                  Application Submitted
+                                </Badge>
+                                <span className="text-sm text-gray-500">
+                                  Applied {new Date(job.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {job.type}
+                            <div className="flex flex-col space-y-2 ml-4">
+                              <Link href={`/student/jobs/${job._id}`}>
+                                <Button size="sm" variant="outline" className="w-full">
+                                  View Details
+                                </Button>
+                              </Link>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => job.applicationId && handleWithdrawApplication(job._id, job.applicationId)}
+                                disabled={isWithdrawing === job._id}
+                                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                              >
+                                {isWithdrawing === job._id ? (
+                                  <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                                    Withdrawing...
+                                  </div>
+                                ) : (
+                                  <>
+                                    <X className="h-4 w-4 mr-1" />
+                                    Withdraw
+                                  </>
+                                )}
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
@@ -454,9 +556,9 @@ export default function StudentDashboard() {
                 <CardDescription>Jobs you&apos;ve saved for later</CardDescription>
               </CardHeader>
               <CardContent>
-                {jobs.filter(job => job.saved).length > 0 ? (
+                {jobs?.filter(job => job?.saved).length > 0 ? (
                   <div className="space-y-4">
-                    {jobs.filter(job => job.saved).map((job) => (
+                    {jobs?.filter(job => job?.saved).map((job) => (
                       <Card key={job._id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-6">
                           <div className="flex justify-between items-start">

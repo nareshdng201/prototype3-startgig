@@ -66,7 +66,7 @@ export default function EmployerDashboard() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("jobs")
   const { toast } = useToast()
-
+  console.log(activeTab)
   const fetchJobs = async () => {
     try {
       setIsLoading(true)
@@ -83,7 +83,11 @@ export default function EmployerDashboard() {
   const fetchApplications = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/employer/applications')
+      const url = selectedJobId
+        ? `/api/employer/applications?jobId=${selectedJobId}`
+        : `/api/employer/applications`
+
+      const response = await fetch(url)
       const data = await response.json()
       setApplications(data)
     } catch (error) {
@@ -94,20 +98,20 @@ export default function EmployerDashboard() {
   }
 
   useEffect(() => {
-    if (session?.user?._id) {
+    if (session?.user) {
       fetchJobs()
     }
-  }, [session?.user?._id])
+  }, [session?.user])
 
   useEffect(() => {
-    if (session?.user?._id && activeTab === "applications") {
+    if (session?.user && activeTab === "applications") {
       fetchApplications()
     }
-  }, [session?.user?._id, activeTab])
+  }, [session?.user, activeTab])
 
   const handleDeleteJob = async (jobId: string) => {
     try {
-      const response = await fetch(`/api/employer/jobs/${jobId}?employerId=${session?.user?._id}`, {
+      const response = await fetch(`/api/employer/jobs/${jobId}`, {
         method: "DELETE",
       })
 
@@ -130,7 +134,7 @@ export default function EmployerDashboard() {
   }
 
   const handleUpdateApplicationStatus = async (applicationId: string, newStatus: 'accepted' | 'rejected') => {
-    
+
     if (!applicationId) {
       toast({
         title: "Error",
@@ -148,15 +152,11 @@ export default function EmployerDashboard() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          status: newStatus,
-          employerId: session?.user?._id
+        body: JSON.stringify({
+          status: newStatus
         }),
       })
-
-      if (!response.ok) {
-        throw new Error(response.statusText)
-      }
+      console.log(response)
 
       // Only show success toast and update state if the request was successful
       toast({
@@ -167,7 +167,7 @@ export default function EmployerDashboard() {
       // Update local state
       setApplications((prev) =>
         prev.map((app) =>
-          (app.id === applicationId || app._id === applicationId) ? { ...app, status: newStatus } : app
+          (app.id === applicationId || app?._id === applicationId) ? { ...app, status: newStatus } : app
         )
       )
     } catch (error) {
@@ -182,6 +182,8 @@ export default function EmployerDashboard() {
 
   const handleViewApplications = (jobId: string) => {
     setSelectedJobId(jobId)
+    setActiveTab("applications")
+    // Fetch applications for this specific job
     fetchApplications()
   }
 
@@ -207,9 +209,6 @@ export default function EmployerDashboard() {
   // Add a function to fetch applications when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value)
-    if (value === "applications") {
-      fetchApplications()
-    }
   }
 
   if (isLoading) {
@@ -219,7 +218,7 @@ export default function EmployerDashboard() {
       </div>
     )
   }
-
+  console.log(applications, 'applications')
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -272,7 +271,7 @@ export default function EmployerDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Active Jobs</p>
                   <p className="text-3xl font-bold text-blue-600">
-                    {jobs.filter((job) => job.status === "active").length}
+                    {jobs?.filter((job) => job.status === "active").length}
                   </p>
                 </div>
                 <Briefcase className="h-8 w-8 text-blue-600" />
@@ -285,7 +284,7 @@ export default function EmployerDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Applications</p>
                   <p className="text-3xl font-bold text-green-600">
-                    {jobs.reduce((sum, job) => sum + job.applicants, 0)}
+                    {jobs?.reduce((sum, job) => sum + job.applicants, 0)}
                   </p>
                 </div>
                 <Users className="h-8 w-8 text-green-600" />
@@ -321,20 +320,27 @@ export default function EmployerDashboard() {
         <Tabs defaultValue="jobs" className="space-y-6" onValueChange={handleTabChange}>
           <div className="flex justify-between items-center">
             <TabsList>
-              <TabsTrigger value="jobs">My Jobs</TabsTrigger>
-              <TabsTrigger onClick={() => fetchApplications()} value="applications">Applications</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="jobs" type="button">All Jobs</TabsTrigger> 
+              {/* <TabsTrigger value="analytics" type="button">Analytics</TabsTrigger> */}
             </TabsList>
-            <Link href="/employer/dashboard/add">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Post New Job
-              </Button>
-            </Link>
+            <div className="flex space-x-2">
+              <Link href="/employer/dashboard/applications">
+                <Button variant="outline">
+                  <Users className="h-4 w-4 mr-2" />
+                  View All Applications
+                </Button>
+              </Link>
+              <Link href="/employer/dashboard/add">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Post New Job
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <TabsContent value="jobs" className="space-y-4">
-            {jobs.map((job) => (
+            {jobs?.map((job) => (
               <Card key={job.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -361,14 +367,15 @@ export default function EmployerDashboard() {
                       </div>
                     </div>
                     <div className="flex flex-col space-y-2 ml-4">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewApplications(job.id)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View ({job.applicants})
-                      </Button>
+                      <Link href={`/employer/dashboard/applications?jobId=${job.id}`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View ({job.applicants})
+                        </Button>
+                      </Link>
                       {/* <Button size="sm" variant="outline">
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
@@ -386,7 +393,7 @@ export default function EmployerDashboard() {
                   </div>
                   <div className="flex justify-between items-center text-sm text-gray-500">
                     <span>Posted {job.postedAt}</span>
-                    <span>Deadline: {job.deadline}</span>
+                    <span>Deadline: {job?.deadline}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -425,7 +432,7 @@ export default function EmployerDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {applications.length === 0 ? (
+                {applications?.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-4">
                       {selectedJobId
@@ -444,7 +451,7 @@ export default function EmployerDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {applications.map((application) => (
+                    {applications?.map((application) => (
                       <Card key={application._id || application.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-6">
                           <div className="flex justify-between items-start mb-4">
@@ -514,20 +521,7 @@ export default function EmployerDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BarChart3 className="h-5 w-5 mr-2" />
-                  Analytics Dashboard
-                </CardTitle>
-                <CardDescription>Track your job posting performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">Analytics coming soon! Track views, applications, and more.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
         </Tabs>
       </div>
     </div>

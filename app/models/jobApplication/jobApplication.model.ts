@@ -6,6 +6,8 @@ interface JobApplication extends Document {
     jobId: Types.ObjectId;
     studentId: Types.ObjectId;
     status: 'pending' | 'accepted' | 'rejected';
+    cvUrl?: string;
+    coverLetter?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -25,6 +27,14 @@ const JobApplicationSchema: Schema<JobApplication> = new Schema({
         type: String,
         enum: ['pending', 'accepted', 'rejected'],
         required: [true, 'Status is required'],
+    },
+    cvUrl: {
+        type: String,
+        required: false,
+    },
+    coverLetter: {
+        type: String,
+        required: false,
     },
 }, { timestamps: true });
 

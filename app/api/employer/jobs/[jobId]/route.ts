@@ -2,28 +2,37 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import JobModel from "@/app/models/job/job.model"
 import { connectDb } from "@/lib/db/config/db.config"
-import session from "redux-persist/es/storage/session"
+import { cookies } from 'next/headers'
+import { jwtVerify } from 'jose'
 
 export async function DELETE(
     request: Request,
     { params }: { params: { jobId: string } }
 ) {
     try {
-        // Get employerId from URL query parameters instead of body
-        const { searchParams } = new URL(request.url)
-        const employerId = searchParams.get('employerId')
+        await connectDb()
         
-        console.log('Params:', params)
-        console.log('EmployerId:', employerId)
+        // Get employerId from JWT token
+        const token = cookies().get('token')?.value
+        
+        if (!token) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
 
-        if (!employerId) {
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+        const { payload } = await jwtVerify(token, secret)
+        
+        if (payload.role !== 'employer') {
             return NextResponse.json(
-                { error: "Employer ID is required as a query parameter" },
-                { status: 400 }
+                { error: 'Only employers can delete jobs' },
+                { status: 403 }
             )
         }
 
-        await connectDb()
+        const employerId = payload.userId
+        
+        console.log('Params:', params)
+        console.log('EmployerId:', employerId)
 
         const job = await JobModel.findOne({
             _id: params.jobId,

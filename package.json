@@ -35,6 +35,7 @@
     "mongoose": "^8.15.2",
     "next": "14.0.4",
     "next-auth": "^4.24.5",
+    "next-cloudinary": "^6.16.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.5.2",

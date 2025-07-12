@@ -3,6 +3,8 @@ import { connectDb } from "@/lib/db/config/db.config"
 import JobApplicationModel from "@/app/models/jobApplication/jobApplication.model"
 import JobModel from "@/app/models/job/job.model"
 import { z } from 'zod'
+import { cookies } from 'next/headers'
+import { jwtVerify } from 'jose'
 
 const updateStatusSchema = z.object({
   status: z.enum(['accepted', 'rejected'])
@@ -18,6 +20,26 @@ export async function PATCH(
     const { status } = updateStatusSchema.parse(body)
 
     await connectDb() 
+    
+    // Get employerId from JWT token
+    const token = cookies().get('token')?.value
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    const { payload } = await jwtVerify(token, secret)
+    
+    if (payload.role !== 'employer') {
+      return NextResponse.json(
+        { error: 'Only employers can update application status' },
+        { status: 403 }
+      )
+    }
+
+    const employerId = payload.userId
+    
     console.log(id, status, "id")
 
     // First verify that the application exists and belongs to a job owned by the employer
@@ -27,6 +49,19 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Application not found' },
         { status: 404 }
+      )
+    }
+
+    // Verify that the job belongs to this employer
+    const job = await JobModel.findOne({
+      _id: application.jobId,
+      employerId: employerId
+    })
+
+    if (!job) {
+      return NextResponse.json(
+        { error: 'You do not have permission to update this application' },
+        { status: 403 }
       )
     }
 

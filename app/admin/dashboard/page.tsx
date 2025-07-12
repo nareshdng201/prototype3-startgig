@@ -108,7 +108,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchDashboardStats()
     fetchPendingUsers()
-  }, [fetchDashboardStats, fetchPendingUsers])
+  }, [])
 
   const handleUserApproval = async (userId: string, approved: boolean) => {
     try {

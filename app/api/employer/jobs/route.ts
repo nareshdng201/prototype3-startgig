@@ -19,14 +19,28 @@ const jobSchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const employerId = searchParams.get('employerId')
-
     await connectDb()
+    const token = cookies().get('token')?.value
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    const { payload } = await jwtVerify(token, secret)
+    
+    if (payload.role !== 'employer') {
+      return NextResponse.json(
+        { error: 'Only employers can access this endpoint' },
+        { status: 403 }
+      )
+    }
+
+    const employerId = payload.userId
 
     // Fetch jobs for the current employer
     const jobs = await JobModel.find({ employerId: employerId })
-    
+    console.log(jobs, 'jobs')
     // Get application counts for each job
     const jobsWithApplications = await Promise.all(
       jobs.map(async (job) => {
