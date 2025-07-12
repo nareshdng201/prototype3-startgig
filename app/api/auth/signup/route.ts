@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       _id: new mongoose.Types.ObjectId(),
       ...data,
       password: await hashPassword(data.password),
-      isApproved: 'pending', // Set initial approval status
+      isApproved: data.role === 'employer' ? 'pending' : 'approved', // Set initial approval status
     });
 
     if (!user) {
