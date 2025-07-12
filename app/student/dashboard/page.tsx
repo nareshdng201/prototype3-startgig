@@ -42,7 +42,7 @@ export default function StudentDashboard() {
   const [isApplying, setIsApplying] = useState<string | null>(null)
   const [isWithdrawing, setIsWithdrawing] = useState<string | null>(null)
   const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
-
+ console.log(typeFilter)
   const fetchJobs = async () => {
     try {
       const response = await fetch("/api/jobs")
@@ -86,6 +86,9 @@ export default function StudentDashboard() {
   const filterJobs = useCallback(() => {
     let filtered = [...jobs]
 
+    // Filter out jobs that have already been applied to
+    filtered = filtered.filter(job => !job.applied)
+
     if (searchTerm) {
       filtered = filtered.filter(job =>
         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,14 +103,14 @@ export default function StudentDashboard() {
     }
 
     if (typeFilter && typeFilter !== "all") {
-      filtered = filtered.filter(job => job.type === typeFilter)
+      filtered = filtered.filter(job => job.type?.toLowerCase() === typeFilter.toLowerCase())
     }
 
     setFilteredJobs(filtered)
   }, [jobs, searchTerm, locationFilter, typeFilter])
 
 
-  console.log(jobs)
+
   useEffect(() => {
     fetchJobs()
   }, [])
@@ -215,7 +218,7 @@ export default function StudentDashboard() {
     const isConfirmed = window.confirm(
       "Are you sure you want to withdraw your application? This action cannot be undone."
     )
-    
+
     if (!isConfirmed) {
       return
     }
@@ -236,8 +239,8 @@ export default function StudentDashboard() {
         description: "Your application has been successfully withdrawn",
       })
 
-      setJobs((prev) => prev.map((job) => 
-        job._id === jobId 
+      setJobs((prev) => prev.map((job) =>
+        job._id === jobId
           ? { ...job, applied: false, applicationId: undefined }
           : job
       ))
@@ -415,7 +418,7 @@ export default function StudentDashboard() {
                             <Heart className={`h-4 w-4 mr-1 ${job.saved ? "fill-current text-red-500" : ""}`} />
                             {job.saved ? "Saved" : "Save"}
                           </Button>
-                          <Button
+                          {/* <Button
                             size="sm"
                             onClick={() => handleApply(job._id)}
                             disabled={job.applied || isApplying === job._id}
@@ -430,7 +433,7 @@ export default function StudentDashboard() {
                             ) : (
                               "Apply Now"
                             )}
-                          </Button>
+                          </Button> */}
                         </div>
                       </div>
                       <div className="flex justify-between items-center text-sm text-gray-500">
