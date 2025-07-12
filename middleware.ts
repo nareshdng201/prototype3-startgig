@@ -5,6 +5,13 @@ import { jwtVerify } from 'jose';
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
+  
+  // Debug logging for production
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Middleware - Path:', request.nextUrl.pathname);
+    console.log('Middleware - Token present:', !!token);
+    console.log('Middleware - All cookies:', request.cookies.getAll());
+  }
 
   // If no token is present, redirect to login
   if (!token) {
@@ -12,6 +19,12 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
+    // Ensure JWT_SECRET is available
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set in middleware');
+      return NextResponse.redirect(new URL('/auth/signin', request.url));
+    }
+
     // Verify the token
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);

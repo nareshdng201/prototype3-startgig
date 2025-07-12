@@ -37,13 +37,27 @@ export default function SignInPage() {
 
       // Redirect based on user role
       const userRole = data.user.role
-      if (userRole === "admin") {
-        router.push("/admin/dashboard")
-      } else if (userRole === "employer") {
-        router.push("/employer/dashboard")
-      } else {
-        router.push("/student/dashboard")
+      
+      // Function to perform redirect
+      const performRedirect = () => {
+        const targetPath = userRole === "admin" ? "/admin/dashboard" : 
+                          userRole === "employer" ? "/employer/dashboard" : 
+                          "/student/dashboard"
+        
+        console.log('Attempting redirect to:', targetPath)
+        
+        // Try router.push first
+        router.push(targetPath)
+        
+        // Fallback to window.location after a delay
+        setTimeout(() => {
+          console.log('Fallback redirect to:', targetPath)
+          window.location.href = targetPath
+        }, 1000)
       }
+      
+      // Add a small delay to ensure cookie is set before redirect
+      setTimeout(performRedirect, 100)
     } catch (error) {
       toast({
         title: "Sign in failed",

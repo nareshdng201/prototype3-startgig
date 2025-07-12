@@ -35,6 +35,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
+    // Ensure JWT_SECRET is available
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     const token = await new SignJWT({ 
       userId: user.id, 
       role: user.role,
@@ -44,12 +53,20 @@ export async function POST(request: Request) {
       .setExpirationTime('24h')
       .sign(new TextEncoder().encode(process.env.JWT_SECRET));
 
+    // Debug logging for production
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Login API - Setting token cookie');
+      console.log('Login API - NODE_ENV:', process.env.NODE_ENV);
+      console.log('Login API - User role:', user.role);
+    }
+
     cookies().set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 60 * 60 * 24, // 24 hours
       path: '/',
+      domain: process.env.NODE_ENV === 'production' ? undefined : undefined,
     });
 
     // Return role-specific user data
